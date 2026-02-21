@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <title>STORM STUDIO | ستوديو ستورم</title>
+    <style>
+        :root {
+            --bg: #0f172a;
+            --panel: #1e293b;
+            --accent: #38bdf8;
+            --btn-save: #10b981;
+        }
+
+        body {
+            background: var(--bg);
+            color: white;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+
+        /* رأس الصفحة */
+        header {
+            background: linear-gradient(90deg, #1e293b, #0f172a);
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--accent);
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+        }
+
+        .project-meta {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .project-meta input {
+            background: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 8px;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        /* منطقة العمل */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* شريط الألوان الجانبي */
+        .sidebar {
+            width: 100px;
+            background: var(--panel);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 0;
+            gap: 10px;
+            overflow-y: auto;
+            border-left: 1px solid #334155;
+        }
+
+        .color-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        .color-circle {
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: 0.2s;
+        }
+
+        .color-circle:hover { transform: scale(1.2); border-color: white; }
+        .active-color { border-color: var(--accent) !important; box-shadow: 0 0 10px var(--accent); }
+
+        /* منطقة الرسم */
+        .canvas-zone {
+            flex: 1;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+
+        .canvas-stack {
+            position: relative;
+            width: 640px;
+            height: 360px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            border-radius: 10px;
+        }
+
+        #onion-layer { opacity: 0.2; pointer-events: none; z-index: 2; }
+        #draw-layer { z-index: 3; cursor: crosshair; }
+
+        /* شريط التحكم السفلي */
+        .footer {
+            background: var(--panel);
+            padding: 20px;
+            border-top: 1px solid #334155;
+        }
+
+        .timeline {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+            height: 80px;
+            margin-bottom: 15px;
+            background: #0f172a;
+            padding: 10px;
+            border-radius: 8px;
+        }
+
+        .thumb {
+            min-width: 100px;
+            height: 60px;
+            background: #334155;
+            border: 2px solid transparent;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .thumb.active { border-color: var(--accent); }
+
+        .btn-row {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        button {
+            padding: 12px 25px;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn-add { background: var(--btn-save); color: white; }
+        .btn-play { background: #6366f1; color: white; }
+        .btn-down { background: #ef4444; color: white; }
+        button:hover { opacity: 0.9; transform: translateY(-2px); }
+
+        .tool-btn {
+            padding: 8px;
+            background: #334155;
+            color: white;
+            width: 80%;
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>STORM STUDIO ⚡</h1>
+    <div class="project-meta">
+        <span>اسم المشروع:</span>
+        <input type="text" id="projName" value="Animation_1">
+    </div>
+</header>
+
+<div class="main-container">
+    <div class="sidebar">
+        <button class="tool-btn" onclick="setTool('pen')">✏️ قلم</button>
+        <button class="tool-btn" onclick="setTool('eraser')">🧼 ممحاة</button>
+        <hr style="width: 80%; border: 0.5px solid #334155;">
+        <div class="color-group">
+            <div class="color-circle" style="background: #000;" onclick="pickColor('#000', this)"></div>
+            <div class="color-circle" style="background: #fff;" onclick="pickColor('#fff', this)"></div>
+        </div>
+        <div class="color-group" id="palette"></div>
+    </div>
+
+    <div class="canvas-zone">
+        <div class="canvas-stack">
+            <canvas id="onion-layer" width="640" height="360"></canvas>
+            <canvas id="draw-layer" width="640" height="360"></canvas>
+        </div>
+    </div>
+</div>
+
+<div class="footer">
+    <div class="timeline" id="timeline"></div>
+    <div class="btn-row">
+        <button class="btn-add" onclick="nextFrame()">➕ إطار جديد</button>
+        <button class="btn-play" onclick="playPreview()">▶ تشغيل العرض</button>
+        <button class="btn-down" onclick="exportVideo()">💾 تنزيل الكليب</button>
+        <button onclick="location.reload()" style="background:#475569; color:white;">🔄 إعادة البدء</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('draw-layer');
+    const ctx = canvas.getContext('2d');
+    const onion = document.getElementById('onion-layer');
+    const oCtx = onion.getContext('2d');
+    
+    let frames = [];
+    let currentIdx = 0;
+    let isDrawing = false;
+    let activeColor = "#000000";
+    let currentTool = 'pen';
+
+    // 1. توليد الألوان (40 لوناً)
+    const palette = document.getElementById('palette');
+    for(let i=0; i<40; i++){
+        const color = `hsl(${(i*360)/40}, 70%, 50%)`;
+        const div = document.createElement('div');
+        div.className = 'color-circle';
+        div.style.background = color;
+        div.onclick = () => pickColor(color, div);
+        palette.appendChild(div);
+    }
+
+    function pickColor(c, el) {
+        activeColor = c;
+        currentTool = 'pen';
+        document.querySelectorAll('.color-circle').forEach(d => d.classList.remove('active-color'));
+        el.classList.add('active-color');
+    }
+
+    function setTool(t) { currentTool = t; }
+
+    // 2. منطق الرسم
+    canvas.onmousedown = (e) => { isDrawing = true; draw(e); };
+    window.onmouseup = () => { if(isDrawing) { isDrawing = false; ctx.beginPath(); saveState(); } };
+    canvas.onmousemove = draw;
+
+    function draw(e) {
+        if(!isDrawing) return;
+        const r = canvas.getBoundingClientRect();
+        ctx.lineWidth = currentTool === 'eraser' ? 20 : 5;
+        ctx.lineCap = 'round';
+        ctx.globalCompositeOperation = currentTool === 'eraser' ? 'destination-out' : 'source-over';
+        ctx.strokeStyle = activeColor;
+        ctx.lineTo(e.clientX - r.left, e.clientY - r.top);
+        ctx.stroke();
+    }
+
+    function saveState() {
+        const temp = document.createElement('canvas');
+        temp.width = 640; temp.height = 360;
+        const tCtx = temp.getContext('2d');
+        // الرسم بخلفية بيضاء للحفظ
+        tCtx.fillStyle = "white";
+        tCtx.fillRect(0,0,640,360);
+        tCtx.drawImage(canvas, 0, 0);
+        frames[currentIdx] = temp.toDataURL();
+        updateTimeline();
+    }
+
+    function nextFrame() {
+        // تحديث الظل
+        oCtx.clearRect(0,0,640,360);
+        oCtx.globalAlpha = 1;
+        oCtx.drawImage(canvas, 0, 0);
+        
+        // مسح اللوحة الحالية
+        currentIdx++;
+        ctx.clearRect(0,0,640,360);
+        saveState();
+    }
+
+    function updateTimeline() {
+        const tl = document.getElementById('timeline');
+        tl.innerHTML = '';
+        frames.forEach((f, i) => {
+            const div = document.createElement('div');
+            div.className = `thumb ${i === currentIdx ? 'active' : ''}`;
+            div.innerHTML = `<img src="${f}" width="100%">`;
+            tl.appendChild(div);
+        });
+    }
+
+    function playPreview(callback) {
+        let i = 0;
+        const anim = setInterval(() => {
+            if(i >= frames.length) { 
+                clearInterval(anim); 
+                if(callback) callback(); 
+                return; 
+            }
+            const img = new Image();
+            img.src = frames[i];
+            img.onload = () => {
+                ctx.clearRect(0,0,640,360);
+                ctx.drawImage(img, 0, 0);
+            };
+            i++;
+        }, 120);
+    }
+
+    // 3. التنزيل الحقيقي والمؤكد
+    function exportVideo() {
+        if(frames.length < 2) return alert("الرجاء رسم إطارين على الأقل");
+        
+        const stream = canvas.captureStream(10);
+        const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+        const chunks = [];
+        const name = document.getElementById('projName').value || 'Storm_Project';
+
+        recorder.ondataavailable = e => chunks.push(e.data);
+        recorder.onstop = () => {
+            const blob = new Blob(chunks, { type: 'video/webm' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${name}.webm`;
+            a.click();
+            alert("تم حفظ الفيديو بنجاح!");
+        };
+
+        recorder.start();
+        playPreview(() => {
+            setTimeout(() => recorder.stop(), 500);
+        });
+    }
+
+    // البداية
+    saveState();
+</script>
+</body>
+</html>
